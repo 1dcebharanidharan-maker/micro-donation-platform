@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Create Campaign - Micro Donation Platform</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+        .navbar { background: #2c3e50; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h1 { font-size: 1.5rem; }
+        .nav-links { display: flex; gap: 1rem; }
+        .nav-links a { color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 5px; transition: background 0.3s; }
+        .nav-links a:hover { background: #34495e; }
+        .container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+        .form-container { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 1.5rem; }
+        label { display: block; margin-bottom: 0.5rem; color: #2c3e50; font-weight: 500; }
+        input, select, textarea { width: 100%; padding: 0.75rem; border: 2px solid #ecf0f1; border-radius: 5px; font-size: 1rem; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #3498db; }
+        textarea { height: 120px; resize: vertical; }
+        .btn { background: #27ae60; color: white; padding: 0.75rem 2rem; border: none; border-radius: 5px; cursor: pointer; font-size: 1rem; width: 100%; }
+        .btn:hover { background: #229954; }
+        .success { background: #d5f4e6; color: #27ae60; padding: 1rem; border-radius: 5px; margin-bottom: 1rem; }
+        .error { background: #fadbd8; color: #e74c3c; padding: 1rem; border-radius: 5px; margin-bottom: 1rem; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h1>💝 Micro Donation Platform</h1>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/campaigns">All Campaigns</a>
+            <a href="/create-campaign">Create Campaign</a>
+            <a href="/create-user">Register</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="form-container">
+            <h2 style="color: #2c3e50; margin-bottom: 2rem; text-align: center;">🚀 Create New Campaign</h2>
+            
+            <div id="message"></div>
+            
+            <form id="campaignForm">
+                <div class="form-group">
+                    <label for="title">Campaign Title *</label>
+                    <input type="text" id="title" name="title" required placeholder="e.g., New Computer Lab for Engineering Students">
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Description *</label>
+                    <textarea id="description" name="description" required placeholder="Describe your campaign, its goals, and how the funds will be used..."></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="goalAmount">Goal Amount ($) *</label>
+                        <input type="number" id="goalAmount" name="goalAmount" required min="1" step="0.01" placeholder="1000.00">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="createdBy">Campaign Creator *</label>
+                        <select id="createdBy" name="createdBy" required>
+                            <option value="">Select User</option>
+                            <option th:each="user : ${users}" th:value="${user.userId}" th:text="${user.name + ' (' + user.email + ')'}">User Name</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="startDate">Start Date *</label>
+                        <input type="date" id="startDate" name="startDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="endDate">End Date *</label>
+                        <input type="date" id="endDate" name="endDate" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn">Create Campaign</button>
+            </form>
+            
+            <div style="margin-top: 1rem; text-align: center;">
+                <p style="color: #7f8c8d;">Don't have an account? <a href="/create-user" style="color: #3498db;">Register here</a></p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Set default dates
+        const today = new Date().toISOString().split('T')[0];
+        const nextMonth = new Date();
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        const endDate = nextMonth.toISOString().split('T')[0];
+        
+        document.getElementById('startDate').value = today;
+        document.getElementById('endDate').value = endDate;
+        
+        document.getElementById('campaignForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                goalAmount: parseFloat(document.getElementById('goalAmount').value),
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value,
+                createdBy: { userId: parseInt(document.getElementById('createdBy').value) }
+            };
+            
+            try {
+                const response = await fetch('/api/campaigns', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (response.ok) {
+                    const campaign = await response.json();
+                    document.getElementById('message').innerHTML = '<div class="success">Campaign created successfully! <a href="/campaign/' + campaign.campaignId + '" style="color: #27ae60; font-weight: bold;">View Campaign</a></div>';
+                    document.getElementById('campaignForm').reset();
+                    document.getElementById('startDate').value = today;
+                    document.getElementById('endDate').value = endDate;
+                } else {
+                    document.getElementById('message').innerHTML = '<div class="error">Error creating campaign. Please check all fields.</div>';
+                }
+            } catch (error) {
+                document.getElementById('message').innerHTML = '<div class="error">Network error. Please try again.</div>';
+            }
+        });
+    </script>
+</body>
+</html>
